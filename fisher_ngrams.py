@@ -103,7 +103,6 @@ def entropy(a):
             h += -1 * a[i] * math.log(a[i], 2)
     return h
 
-
 # 4. pointwise mutual information between ngram and topic,
 # (i.e., for some particular ngram and some particular topic)
 # only computed for ngram/topic pairs that are nonzero
