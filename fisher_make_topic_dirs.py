@@ -1,8 +1,10 @@
-from os.path import join, basename, makedirs
+from os.path import join, basename
+from os import makedirs
 import transcripts
 import calldata
+import config
 
-OUT_ROOT = '/home/dfried/fisher_txt'
+OUT_ROOT = config.FISHER_TOPIC_SEGMENTATION_ROOT
 
 # get topic ids
 topic_info = calldata.get_topic_info()

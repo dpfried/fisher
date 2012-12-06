@@ -1,5 +1,6 @@
 from csv import DictReader
 from os.path import join
+from xml.etree import ElementTree
 import config
 
 table = None
@@ -35,6 +36,12 @@ def transcript_ids_for_topic(topic_id):
 #
 # 'Professional Sports on TV.' -> 'Professional Sports on TV'
 
+#def get_topic_info():
+#    topic_path = join(config.FISHER_ROOT, 'doc', 'fe_03_topics.sgm')
+#    lines = '<root>\n%s\n</root>' % open(topic_path, 'r').read().replace('<<', '&lt;')
+#    root = ElementTree.fromstring(lines)
+#    return [(topic.attrib['id'], topic.attrib['title'], topic.text.strip()) for topic in root]
+
 def get_topic_info():
     topic_info = []
 
@@ -51,8 +58,9 @@ def get_topic_info():
 
         title_idx = line.find('title=')
         if title_idx!=-1:
-            title_str = line[title_idx+7:line.find('"',title_idx+7)][:-1]
-
+            title_str = line[title_idx+7:line.find('"',title_idx+7)]
+            if title_str[-1]=='.':
+                title_str = title_str[:-1]
         sentence = lines[i+1].strip()
 
         topic_info.append((topic_str, title_str, sentence))
