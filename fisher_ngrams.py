@@ -241,6 +241,8 @@ def topic_word_fq():
 
     ngram_topic2tokenfq_docfq = {}
 
+    files = get_files_recursive(DATA_ROOT, '*.txt')#[:100]
+
     # iterate over files to compute
     # (ngram, topic, #tokens, #docs) for some value of n
     # CURRENTLY NOT MAKING USE OF #docs
@@ -266,8 +268,8 @@ def topic_from_path(path):
     return os.path.split(topic_path)[1]
 
 topic_word_fq()
-
 files = get_files_recursive(DATA_ROOT, '*.txt')#[:100]
+
 print 'num files:', len(files)
 for n in [1,2,3]: # order of n-gram: unigram, bigram, trigram
 ##for n in [1,2]: # order of n-gram: unigram, bigram, trigram
