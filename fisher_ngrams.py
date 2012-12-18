@@ -134,8 +134,7 @@ def get_pointwise_mi(ngram_topic2prob, ngram2prob, topic2prob):
 
 
 def get_mi_probs(ngram_topic2tokenfq_docfq):
-
-    total_tokenfq = 1.0*sum([fq for (_,[fq,__]) in ngram_topic2tokenfq_docfq.items()])
+    # total_tokenfq = 1.0*sum([fq for (_,[fq,__]) in ngram_topic2tokenfq_docfq.items()])
     #print 'total_tokenfq:', total_tokenfq
 
     ngram_topic2tokenfq = {}
@@ -267,83 +266,84 @@ def topic_from_path(path):
     topic_path = os.path.split(path)[0]
     return os.path.split(topic_path)[1]
 
-topic_word_fq()
-files = get_files_recursive(DATA_ROOT, '*.txt')#[:100]
+if __name__ == "__main__":
+    topic_word_fq()
+    files = get_files_recursive(DATA_ROOT, '*.txt')#[:100]
 
-print 'num files:', len(files)
-for n in [1,2,3]: # order of n-gram: unigram, bigram, trigram
+    print 'num files:', len(files)
+    for n in [1,2,3]: # order of n-gram: unigram, bigram, trigram
 ##for n in [1,2]: # order of n-gram: unigram, bigram, trigram
 ##for n in [1]:
-    print 'n:', n
+        print 'n:', n
 
-    # 0. ngram_topic2tokenfq_docfq
-    # key: (ngram, topic)
-    # value: (total token fquency, number of documents it occurs in)
-    ngram_topic2tokenfq_docfq = {}
+        # 0. ngram_topic2tokenfq_docfq
+        # key: (ngram, topic)
+        # value: (total token fquency, number of documents it occurs in)
+        ngram_topic2tokenfq_docfq = {}
 
-    print 0
-    # iterate over files to compute
-    # (ngram, topic, #tokens, #docs) for some value of n
-    # CURRENTLY NOT MAKING USE OF #docs
-    for fi in files:
-        # topic is last subdir in path
-        topic = '_'.join(topic_from_path(fi).split())
-        #print topic
-        get_file_ngram_fqs(fi, topic, n, ngram_topic2tokenfq_docfq)
-
-
-
-    # 1. frequency filter: minimum freq for n-gram to be included in output file
-    min_freq = 50
-    freq_ngrams = set([ng for ((ng,_),(tf,__)) in ngram_topic2tokenfq_docfq.items() if tf >= min_freq])
+        print 0
+        # iterate over files to compute
+        # (ngram, topic, #tokens, #docs) for some value of n
+        # CURRENTLY NOT MAKING USE OF #docs
+        for fi in files:
+            # topic is last subdir in path
+            topic = '_'.join(topic_from_path(fi).split())
+            #print topic
+            get_file_ngram_fqs(fi, topic, n, ngram_topic2tokenfq_docfq)
 
 
-    # 2. frequency of (ngram, topic)
-    ngram_topic2tokenfq = dict([(k,v[0]) for (k,v) in ngram_topic2tokenfq_docfq.items()])
-    write_sorted_dict(ngram_topic2tokenfq, 'ngram_topic2tokenfq', n, freq_filter=True)
 
-    
-    # 3. p(ngram|topic), by #tokens
-    print 'compute p(ngram|topic)'
-    topic2ngram2prob = get_p_ngram_given_topic(ngram_topic2tokenfq_docfq)
-    write_a2b2c(topic2ngram2prob, 'topic2ngram2prob', n, num_top_vals=25, freq_filter=True)
-    del topic2ngram2prob # use less memory on my old computer
-
-    
-    # 4. p(topic|ngram), by #tokens
-    # TODO: could use frequency filter early
-    print 'compute p(topic|ngram)'
-    ngram2topic2prob = get_p_topic_given_ngram(ngram_topic2tokenfq_docfq)
-    write_a2b2c(ngram2topic2prob, 'ngram2topic2prob', n, num_top_vals=5, freq_filter=True, abbrev=True, )
+        # 1. frequency filter: minimum freq for n-gram to be included in output file
+        min_freq = 50
+        freq_ngrams = set([ng for ((ng,_),(tf,__)) in ngram_topic2tokenfq_docfq.items() if tf >= min_freq])
 
 
-    # 5. topic entropy given ngram, by #tokens
-    # high entropy = ngram is not particular to topic
-    # TODO: could use frequency filter early
-    print 'compute topic entropy given ngram'
-    ngram2topic_entropy = get_topic_entropy_given_ngram(ngram2topic2prob)
-    write_sorted_dict(ngram2topic_entropy, 'ngram2topic_entropy', n, freq_filter=True)
-    del ngram2topic2prob # use less memory on my old computer
+        # 2. frequency of (ngram, topic)
+        ngram_topic2tokenfq = dict([(k,v[0]) for (k,v) in ngram_topic2tokenfq_docfq.items()])
+        write_sorted_dict(ngram_topic2tokenfq, 'ngram_topic2tokenfq', n, freq_filter=True)
+
+        
+        # 3. p(ngram|topic), by #tokens
+        print 'compute p(ngram|topic)'
+        topic2ngram2prob = get_p_ngram_given_topic(ngram_topic2tokenfq_docfq)
+        write_a2b2c(topic2ngram2prob, 'topic2ngram2prob', n, num_top_vals=25, freq_filter=True)
+        del topic2ngram2prob # use less memory on my old computer
+
+        
+        # 4. p(topic|ngram), by #tokens
+        # TODO: could use frequency filter early
+        print 'compute p(topic|ngram)'
+        ngram2topic2prob = get_p_topic_given_ngram(ngram_topic2tokenfq_docfq)
+        write_a2b2c(ngram2topic2prob, 'ngram2topic2prob', n, num_top_vals=5, freq_filter=True, abbrev=True, )
 
 
-    # 6. pointwise mutual information between ngram and topic
-    # (i.e., for some particular ngram and some particular topic)
-    print 'compute pointwise mutual information'
-    t = get_mi_probs(ngram_topic2tokenfq_docfq)
-    (ngram_topic2tokenfq, ngram2tokenfq, topic2tokenfq) = t[0:3]
-    (ngram_topic2prob, ngram2prob, topic2prob) = t[3:6]
-    ngram_topic2mi = get_pointwise_mi(ngram_topic2prob, ngram2prob, topic2prob)
-
-    write_sorted_dict(ngram2tokenfq, 'ngram2tokenfq', n, freq_filter=True)
-    write_sorted_dict(ngram2prob, 'ngram2prob', n, freq_filter=True)
-    write_sorted_dict(topic2prob, 'topic2prob', n, freq_filter=False)
-    write_sorted_dict(ngram_topic2mi, 'ngram_topic2mi', n, freq_filter=True)
+        # 5. topic entropy given ngram, by #tokens
+        # high entropy = ngram is not particular to topic
+        # TODO: could use frequency filter early
+        print 'compute topic entropy given ngram'
+        ngram2topic_entropy = get_topic_entropy_given_ngram(ngram2topic2prob)
+        write_sorted_dict(ngram2topic_entropy, 'ngram2topic_entropy', n, freq_filter=True)
+        del ngram2topic2prob # use less memory on my old computer
 
 
-    # 7. topic2mi2ngram (which is just rearrangement of ngram_topic2mi)
-    topic2mi_ngrams = {}
-    for ((ngram,topic), mi) in ngram_topic2mi.items():
-        mi_ngrams = topic2mi_ngrams.get(topic, [])
-        mi_ngrams.append((mi,ngram))
-        topic2mi_ngrams[topic] = mi_ngrams
-    write_topic2mi_ngrams(topic2mi_ngrams, 'topic2mi_ngrams', n, num_top_vals=100, freq_filter=True)
+        # 6. pointwise mutual information between ngram and topic
+        # (i.e., for some particular ngram and some particular topic)
+        print 'compute pointwise mutual information'
+        t = get_mi_probs(ngram_topic2tokenfq_docfq)
+        (ngram_topic2tokenfq, ngram2tokenfq, topic2tokenfq) = t[0:3]
+        (ngram_topic2prob, ngram2prob, topic2prob) = t[3:6]
+        ngram_topic2mi = get_pointwise_mi(ngram_topic2prob, ngram2prob, topic2prob)
+
+        write_sorted_dict(ngram2tokenfq, 'ngram2tokenfq', n, freq_filter=True)
+        write_sorted_dict(ngram2prob, 'ngram2prob', n, freq_filter=True)
+        write_sorted_dict(topic2prob, 'topic2prob', n, freq_filter=False)
+        write_sorted_dict(ngram_topic2mi, 'ngram_topic2mi', n, freq_filter=True)
+
+
+        # 7. topic2mi2ngram (which is just rearrangement of ngram_topic2mi)
+        topic2mi_ngrams = {}
+        for ((ngram,topic), mi) in ngram_topic2mi.items():
+            mi_ngrams = topic2mi_ngrams.get(topic, [])
+            mi_ngrams.append((mi,ngram))
+            topic2mi_ngrams[topic] = mi_ngrams
+        write_topic2mi_ngrams(topic2mi_ngrams, 'topic2mi_ngrams', n, num_top_vals=100, freq_filter=True)
